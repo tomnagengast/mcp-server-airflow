@@ -128,6 +128,53 @@ server.tool(
   }
 );
 
+server.tool(
+  "airflow_get_task_logs",
+  "Get logs for a specific task instance",
+  {
+    dag_id: z.string().describe("The ID of the DAG"),
+    dag_run_id: z.string().describe("The ID of the DAG run"),
+    task_id: z.string().describe("The ID of the task"),
+    task_try_number: z.number().default(1).optional().describe("The try number of the task (default: 1)"),
+    full_content: z.boolean().default(true).optional().describe("Whether to get full log content (default: true)"),
+  },
+  async (args, _extra) => {
+    return await airflowClient.getTaskLogs(
+      args.dag_id, 
+      args.dag_run_id, 
+      args.task_id, 
+      args.task_try_number, 
+      args.full_content
+    );
+  }
+);
+
+server.tool(
+  "airflow_get_dag_run_logs",
+  "Get logs for all tasks in a DAG run",
+  {
+    dag_id: z.string().describe("The ID of the DAG"),
+    dag_run_id: z.string().describe("The ID of the DAG run"),
+    limit: z.number().default(10).optional().describe("Maximum number of tasks to show logs for (default: 10)"),
+  },
+  async (args, _extra) => {
+    return await airflowClient.getDagRunLogs(args.dag_id, args.dag_run_id, args.limit);
+  }
+);
+
+server.tool(
+  "airflow_tail_dag_run",
+  "Tail/monitor a DAG run showing recent activity and logs",
+  {
+    dag_id: z.string().describe("The ID of the DAG"),
+    dag_run_id: z.string().describe("The ID of the DAG run"),
+    max_lines: z.number().default(50).optional().describe("Maximum number of log lines to show per task (default: 50)"),
+  },
+  async (args, _extra) => {
+    return await airflowClient.tailDagRun(args.dag_id, args.dag_run_id, args.max_lines);
+  }
+);
+
 async function main() {
   // Create the HTTP transport with session support
   const transport = new StreamableHTTPServerTransport({

@@ -12,18 +12,31 @@ A Model Context Protocol (MCP) server that provides comprehensive integration wi
   - [Google Cloud Composer](https://cloud.google.com/composer)
   - [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/)
   - Self-hosted Airflow instances
+- **Comprehensive Logging**: Access and monitor logs for debugging and troubleshooting:
+  - Real-time log retrieval for individual tasks
+  - Aggregate logs for entire DAG runs
+  - Smart log tailing with recent activity summaries
+  - Automatic log formatting and decoding
 
 ## Available Tools
 
+### DAG Management
 1. **airflow_list_dags** - List all DAGs with pagination and sorting
 2. **airflow_get_dag** - Get detailed information about a specific DAG
 3. **airflow_trigger_dag** - Trigger a new DAG run with optional configuration
-4. **airflow_list_dag_runs** - List DAG runs for a specific DAG
-5. **airflow_get_dag_run** - Get details of a specific DAG run
-6. **airflow_list_task_instances** - List task instances for a DAG run
-7. **airflow_get_task_instance** - Get detailed task instance information
-8. **airflow_pause_dag** - Pause a DAG
-9. **airflow_unpause_dag** - Unpause a DAG
+4. **airflow_pause_dag** - Pause a DAG
+5. **airflow_unpause_dag** - Unpause a DAG
+
+### DAG Run Monitoring
+6. **airflow_list_dag_runs** - List DAG runs for a specific DAG
+7. **airflow_get_dag_run** - Get details of a specific DAG run
+8. **airflow_list_task_instances** - List task instances for a DAG run
+9. **airflow_get_task_instance** - Get detailed task instance information
+
+### Logging & Debugging
+10. **airflow_get_task_logs** - Get complete logs for a specific task instance
+11. **airflow_get_dag_run_logs** - Get logs for all tasks in a DAG run
+12. **airflow_tail_dag_run** - Tail/monitor a DAG run with recent activity and logs
 
 ## Installation & Deployment
 
@@ -274,12 +287,27 @@ For streamable HTTP transport, configure Claude to use your deployed endpoint:
 
 Once connected, you can use natural language to interact with Airflow:
 
+### DAG Management
 - "List all my DAGs"
 - "Show me the details of the data_pipeline DAG"
 - "Trigger the daily_etl DAG with custom configuration"
+- "Pause the problematic_dag DAG"
+
+### Monitoring & Status
 - "What's the status of the latest run for my_workflow?"
 - "Show me all failed task instances from the last run"
-- "Pause the problematic_dag DAG"
+- "List all DAG runs for my_data_pipeline from today"
+
+### Logging & Debugging
+- "Show me the logs for the extract_data task in run daily_etl_2024_01_15"
+- "Get all logs for the failed DAG run daily_etl_2024_01_15"
+- "Tail the current DAG run and show me what's happening"
+- "Show me the recent activity for the running data_pipeline"
+
+### Advanced Examples
+- "Get logs for task 'transform_data' in DAG 'etl_pipeline' run 'manual_2024_01_15', try number 2"
+- "Monitor the DAG run 'scheduled_2024_01_15' and show the last 100 log lines for each task"
+- "Show me logs for the first 5 tasks in the failed DAG run"
 
 ## Authentication Requirements
 
