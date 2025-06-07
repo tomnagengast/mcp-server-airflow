@@ -74,22 +74,39 @@ fi
 
 # Test MCP endpoint with initialization
 echo "Testing MCP initialization..."
-INIT_RESPONSE=$(curl -s -X POST http://localhost:$PORT/ \
+INIT_RESPONSE_WITH_HEADERS=$(curl -s -X POST http://localhost:$PORT/ \
     -H "Content-Type: application/json" \
+    -H "Accept: application/json, text/event-stream" \
+    -D /tmp/headers.txt \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "test", "version": "1.0.0"}}}')
 
-if echo "$INIT_RESPONSE" | grep -q "mcp-server-airflow"; then
+# Extract session ID from response headers
+SESSION_ID=$(grep -i "mcp-session-id" /tmp/headers.txt | cut -d: -f2 | tr -d ' \r\n' || echo "")
+
+if echo "$INIT_RESPONSE_WITH_HEADERS" | grep -q "mcp-server-airflow"; then
     echo "✅ MCP initialization successful"
+    if [ -n "$SESSION_ID" ]; then
+        echo "   Session ID: $SESSION_ID"
+    fi
 else
     echo "❌ MCP initialization failed"
-    echo "Response: $INIT_RESPONSE"
+    echo "Response: $INIT_RESPONSE_WITH_HEADERS"
 fi
 
 # Test tools/list endpoint
 echo "Testing tools list..."
-TOOLS_RESPONSE=$(curl -s -X POST http://localhost:$PORT/ \
-    -H "Content-Type: application/json" \
-    -d '{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}')
+if [ -n "$SESSION_ID" ]; then
+    TOOLS_RESPONSE=$(curl -s -X POST http://localhost:$PORT/ \
+        -H "Content-Type: application/json" \
+        -H "Accept: application/json, text/event-stream" \
+        -H "Mcp-Session-Id: $SESSION_ID" \
+        -d '{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}')
+else
+    TOOLS_RESPONSE=$(curl -s -X POST http://localhost:$PORT/ \
+        -H "Content-Type: application/json" \
+        -H "Accept: application/json, text/event-stream" \
+        -d '{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}')
+fi
 
 if echo "$TOOLS_RESPONSE" | grep -q "airflow_list_dags"; then
     echo "✅ Tools list successful"
@@ -99,6 +116,9 @@ else
     echo "❌ Tools list failed"
     echo "Response: $TOOLS_RESPONSE"
 fi
+
+# Cleanup temp files
+rm -f /tmp/headers.txt
 
 # Cleanup
 echo ""
