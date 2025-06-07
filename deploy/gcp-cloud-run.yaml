@@ -1,0 +1,50 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: mcp-server-airflow
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/memory: "512Mi"
+        run.googleapis.com/cpu: "1000m"
+        run.googleapis.com/max-scale: "10"
+        run.googleapis.com/min-scale: "0"
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/YOUR_PROJECT_ID/mcp-server-airflow:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: AIRFLOW_BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: airflow-config
+              key: base_url
+        - name: AIRFLOW_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: airflow-config
+              key: token
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10

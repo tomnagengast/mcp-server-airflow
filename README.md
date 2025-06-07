@@ -25,22 +25,124 @@ A Model Context Protocol (MCP) server that provides comprehensive integration wi
 8. **airflow_pause_dag** - Pause a DAG
 9. **airflow_unpause_dag** - Unpause a DAG
 
-## Installation
+## Installation & Deployment
 
-### Via NPX (Recommended)
+### Local Development
+
+#### Via NPX (Recommended for Claude Desktop)
 
 ```bash
 npx mcp-server-airflow
 ```
 
-### From Source
+#### HTTP Server (Recommended for Cloud Deployment)
+
+```bash
+npx mcp-server-airflow-http
+```
+
+#### From Source
 
 ```bash
 git clone https://github.com/tomnagengast/mcp-server-airflow.git
 cd mcp-server-airflow
 npm install
 npm run build
+
+# For stdio mode (Claude Desktop)
 npm start
+
+# For HTTP mode (cloud deployment)
+npm run start:http
+```
+
+### Cloud Deployment (Recommended)
+
+This server supports streamable HTTP transport, which is the current best practice for MCP servers. Deploy to your preferred cloud platform:
+
+#### Quick Deploy
+
+```bash
+npm run deploy
+```
+
+This interactive script will guide you through deploying to:
+- Google Cloud Platform (Cloud Run)
+- Amazon Web Services (ECS Fargate)
+- DigitalOcean App Platform
+
+#### Manual Deployment Options
+
+<details>
+<summary>🌐 Google Cloud Platform (Cloud Run)</summary>
+
+```bash
+# Build and push to Container Registry
+gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/mcp-server-airflow
+
+# Create secrets
+echo "https://your-airflow-instance.com" | gcloud secrets create airflow-base-url --data-file=-
+echo "your_token_here" | gcloud secrets create airflow-token --data-file=-
+
+# Deploy to Cloud Run
+gcloud run deploy mcp-server-airflow \
+  --image gcr.io/YOUR_PROJECT_ID/mcp-server-airflow \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --port 3000 \
+  --memory 512Mi \
+  --set-secrets AIRFLOW_BASE_URL=airflow-base-url:latest,AIRFLOW_TOKEN=airflow-token:latest
+```
+
+</details>
+
+<details>
+<summary>☁️ Amazon Web Services (ECS Fargate)</summary>
+
+```bash
+# Create ECR repository
+aws ecr create-repository --repository-name mcp-server-airflow
+
+# Build and push image
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+docker build -t mcp-server-airflow .
+docker tag mcp-server-airflow:latest YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mcp-server-airflow:latest
+docker push YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mcp-server-airflow:latest
+
+# Create secrets in Secrets Manager
+aws secretsmanager create-secret --name airflow-config --secret-string '{"base_url":"https://your-airflow-instance.com","token":"your_token_here"}'
+
+# Register task definition and create service (use provided template)
+aws ecs register-task-definition --cli-input-json file://deploy/aws-ecs-fargate.json
+```
+
+</details>
+
+<details>
+<summary>🌊 DigitalOcean App Platform</summary>
+
+1. Fork this repository to your GitHub account
+2. Create a new app in DigitalOcean App Platform
+3. Connect your forked repository
+4. Use the provided app spec: `deploy/digitalocean-app.yaml`
+5. Set environment variables in the dashboard:
+   - `AIRFLOW_BASE_URL`
+   - `AIRFLOW_TOKEN` (or `AIRFLOW_USERNAME` and `AIRFLOW_PASSWORD`)
+
+</details>
+
+### Docker Deployment
+
+```bash
+# Build image
+npm run docker:build
+
+# Run with environment file
+npm run docker:run
+
+# Or with docker-compose
+docker-compose up
 ```
 
 ## Configuration
@@ -96,7 +198,43 @@ export AIRFLOW_BASE_URL="https://your-environment-name.airflow.region.amazonaws.
 # Use AWS credentials with appropriate IAM permissions
 ```
 
+## Testing
+
+### Local Testing
+
+Test both stdio and HTTP modes:
+
+```bash
+# Set required environment variables
+export AIRFLOW_BASE_URL="https://your-airflow-instance.com"
+export AIRFLOW_TOKEN="your_api_token_here"
+
+# Run comprehensive local tests
+npm run test:local
+```
+
+### HTTP API Testing
+
+Once deployed, test your HTTP endpoint:
+
+```bash
+# Health check
+curl https://your-deployed-url/health
+
+# MCP initialization
+curl -X POST https://your-deployed-url/ \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "test", "version": "1.0.0"}}}'
+
+# List available tools
+curl -X POST https://your-deployed-url/ \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}'
+```
+
 ## Claude Desktop Integration
+
+### Stdio Mode (Local Development)
 
 Add this to your Claude Desktop MCP settings:
 
@@ -109,6 +247,23 @@ Add this to your Claude Desktop MCP settings:
       "env": {
         "AIRFLOW_BASE_URL": "https://your-airflow-instance.com",
         "AIRFLOW_TOKEN": "your_api_token_here"
+      }
+    }
+  }
+}
+```
+
+### HTTP Mode (Cloud Deployment)
+
+For streamable HTTP transport, configure Claude to use your deployed endpoint:
+
+```json
+{
+  "mcpServers": {
+    "airflow": {
+      "transport": {
+        "type": "http",
+        "url": "https://your-deployed-url"
       }
     }
   }
@@ -141,6 +296,26 @@ This server uses Airflow's stable REST API (v1), which requires authentication. 
 - For production deployments, prefer API tokens over username/password
 - Ensure your Airflow instance has proper network security (TLS, VPC, etc.)
 - Apply appropriate rate limiting and monitoring
+- Use HTTPS endpoints for production deployments
+- Implement proper authentication and authorization at the load balancer/gateway level
+
+## Performance & Scaling
+
+### HTTP Mode Benefits
+
+- **Stateless**: Each request is independent, allowing horizontal scaling
+- **Caching**: Responses can be cached at the CDN/proxy level
+- **Load Balancing**: Multiple instances can handle requests
+- **Monitoring**: Standard HTTP monitoring tools work out of the box
+- **Debugging**: Easy to test and debug with standard HTTP tools
+
+### Recommended Production Setup
+
+- **Auto-scaling**: Configure your cloud platform to scale based on CPU/memory usage
+- **Health Checks**: Use the `/health` endpoint for load balancer health checks
+- **Monitoring**: Set up logging and metrics collection
+- **Caching**: Consider caching frequently accessed DAG information
+- **Rate Limiting**: Implement rate limiting to protect your Airflow instance
 
 ## API Compatibility
 

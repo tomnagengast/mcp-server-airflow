@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 
+import { createServer } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { AirflowClient } from "./airflow-client.js";
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const port = parseInt(args.find(arg => arg.startsWith('--port='))?.split('=')[1] || '3000');
 
 const server = new McpServer({
   name: "mcp-server-airflow",
@@ -13,7 +18,7 @@ const server = new McpServer({
 // Initialize Airflow client
 const airflowClient = new AirflowClient();
 
-// Register tools using the new MCP SDK approach
+// Register all tools (same as in index.ts)
 server.tool(
   "airflow_list_dags",
   "List all DAGs in Airflow",
@@ -124,12 +129,78 @@ server.tool(
 );
 
 async function main() {
-  const transport = new StdioServerTransport();
+  // Create the HTTP transport with session support
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => crypto.randomUUID(),
+  });
+
   await server.connect(transport);
-  console.error("MCP Server for Airflow started (stdio mode)");
+
+  // Create HTTP server
+  const httpServer = createServer(async (req, res) => {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+
+    // Handle health check endpoint
+    if (req.url === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'healthy', service: 'mcp-server-airflow' }));
+      return;
+    }
+
+    // Parse request body for POST requests
+    let body: any = undefined;
+    if (req.method === 'POST') {
+      const chunks: Buffer[] = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      await new Promise((resolve) => req.on('end', resolve));
+      const bodyText = Buffer.concat(chunks).toString();
+      
+      try {
+        body = bodyText ? JSON.parse(bodyText) : undefined;
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+    }
+
+    // Handle MCP requests
+    try {
+      await transport.handleRequest(req, res, body);
+    } catch (error) {
+      console.error('Error handling request:', error);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal server error' }));
+      }
+    }
+  });
+
+  httpServer.listen(port, () => {
+    console.error(`MCP Server for Airflow started on HTTP port ${port}`);
+    console.error(`Health check: http://localhost:${port}/health`);
+    console.error(`MCP endpoint: http://localhost:${port}/`);
+  });
+
+  // Graceful shutdown
+  process.on('SIGINT', () => {
+    console.error('Shutting down HTTP server...');
+    httpServer.close(() => {
+      process.exit(0);
+    });
+  });
 }
 
 main().catch((error) => {
-  console.error("Server failed to start:", error);
+  console.error("HTTP server failed to start:", error);
   process.exit(1);
 });

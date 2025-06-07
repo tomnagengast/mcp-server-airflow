@@ -5,12 +5,19 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "mcp-server-airflow": "dist/index.js"
+    "mcp-server-airflow": "dist/index.js",
+    "mcp-server-airflow-http": "dist/http-server.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
+    "start:http": "node dist/http-server.js",
+    "start:http:dev": "node dist/http-server.js --port=3000",
+    "test:local": "./scripts/test-local.sh",
+    "deploy": "node scripts/deploy.js",
+    "docker:build": "docker build -t mcp-server-airflow .",
+    "docker:run": "docker run --env-file .env -p 3000:3000 mcp-server-airflow",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

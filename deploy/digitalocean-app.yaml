@@ -1,0 +1,29 @@
+name: mcp-server-airflow
+services:
+- name: api
+  source_dir: /
+  github:
+    repo: YOUR_USERNAME/mcp-server-airflow
+    branch: main
+    deploy_on_push: true
+  run_command: npm start:http
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  http_port: 3000
+  health_check:
+    http_path: /health
+    initial_delay_seconds: 10
+    period_seconds: 30
+    timeout_seconds: 5
+    success_threshold: 1
+    failure_threshold: 3
+  envs:
+  - key: AIRFLOW_BASE_URL
+    scope: RUN_TIME
+    type: SECRET
+  - key: AIRFLOW_TOKEN
+    scope: RUN_TIME
+    type: SECRET
+  routes:
+  - path: /
