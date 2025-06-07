@@ -9,3 +9,5 @@
 > This should work with all popular hosted airflow instances (Astronomer, Google Cloud Composer, Amazon MWAA, etc)
 
 > The current best practice is to host your MCP server for clients serving via streamable http. Add instructions on how to test this locally and how to deploy on GCP, AWS, Digital Ocean, etc.
+
+> Add a utility script for users to deploy to their cloud provider of choice and add usage instructions
