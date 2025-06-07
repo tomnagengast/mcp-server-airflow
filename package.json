@@ -1,0 +1,37 @@
+{
+  "name": "mcp-server-airflow",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for Apache Airflow",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "mcp-server-airflow": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "airflow",
+    "workflow",
+    "orchestration"
+  ],
+  "author": "Tom Nagengast",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.22.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
