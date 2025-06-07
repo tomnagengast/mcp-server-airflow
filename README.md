@@ -83,6 +83,7 @@ This interactive script will guide you through deploying to:
 - Google Cloud Platform (Cloud Run)
 - Amazon Web Services (ECS Fargate)
 - DigitalOcean App Platform
+- Netlify (Serverless Functions)
 
 #### Manual Deployment Options
 
@@ -142,6 +143,62 @@ aws ecs register-task-definition --cli-input-json file://deploy/aws-ecs-fargate.
 5. Set environment variables in the dashboard:
    - `AIRFLOW_BASE_URL`
    - `AIRFLOW_TOKEN` (or `AIRFLOW_USERNAME` and `AIRFLOW_PASSWORD`)
+
+</details>
+
+<details>
+<summary>⚡ Netlify (Serverless Functions)</summary>
+
+Netlify offers excellent serverless deployment with built-in CI/CD and global CDN.
+
+#### Quick Deploy
+
+```bash
+# Interactive deployment script
+node scripts/deploy-netlify.js
+```
+
+#### Manual Deployment
+
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Authenticate with Netlify
+netlify login
+
+# Build for Netlify
+npm run build:netlify
+
+# Initialize site (first time only)
+netlify init
+
+# Deploy to production
+netlify deploy --prod
+```
+
+#### Environment Variables
+
+Set these in your Netlify site dashboard (Site settings → Environment variables):
+
+- `AIRFLOW_BASE_URL`: Your Airflow instance URL
+- `AIRFLOW_TOKEN`: Your Airflow API token (recommended)
+
+Or for basic auth:
+- `AIRFLOW_USERNAME`: Your Airflow username
+- `AIRFLOW_PASSWORD`: Your Airflow password
+
+#### Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start local Netlify development server
+npm run dev:netlify
+```
+
+Your MCP server will be available at `http://localhost:8888/.netlify/functions/mcp`
 
 </details>
 
@@ -282,6 +339,11 @@ For streamable HTTP transport, configure Claude to use your deployed endpoint:
   }
 }
 ```
+
+**Platform-specific endpoints:**
+- **Netlify**: `https://your-site.netlify.app/mcp`
+- **Google Cloud Run**: `https://your-service-url.run.app/`
+- **AWS/DigitalOcean**: `https://your-deployed-url/`
 
 ## Usage Examples
 

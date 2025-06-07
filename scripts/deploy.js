@@ -193,9 +193,10 @@ async function main() {
   console.log('1. Google Cloud Platform (Cloud Run)');
   console.log('2. Amazon Web Services (ECS Fargate)');
   console.log('3. DigitalOcean App Platform');
-  console.log('4. Exit');
+  console.log('4. Netlify (Serverless Functions)');
+  console.log('5. Exit');
   
-  const choice = await question('\nEnter your choice (1-4): ');
+  const choice = await question('\nEnter your choice (1-5): ');
   
   switch (choice) {
     case '1':
@@ -208,6 +209,11 @@ async function main() {
       await deployToDigitalOcean();
       break;
     case '4':
+      console.log('🚀 For Netlify deployment, please use:');
+      console.log('   node scripts/deploy-netlify.js');
+      console.log('   or npm run deploy:netlify');
+      break;
+    case '5':
       console.log('Goodbye!');
       break;
     default:

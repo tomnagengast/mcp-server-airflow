@@ -1,0 +1,44 @@
+[build]
+  # Build command for the serverless functions
+  command = "npm run build:netlify"
+  # Directory where build artifacts are stored
+  publish = "dist"
+  # Functions directory
+  functions = "netlify/functions"
+
+[build.environment]
+  # Node.js version
+  NODE_VERSION = "20"
+
+# Function configuration
+[functions]
+  # Set the default timeout for functions (in seconds)
+  timeout = 30
+  # Memory allocation for functions (in MB)
+  memory = 512
+
+# Redirects and rewrites
+[[redirects]]
+  from = "/mcp/*"
+  to = "/.netlify/functions/mcp"
+  status = 200
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/mcp"
+  status = 200
+
+# Headers for CORS
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, Mcp-Session-Id"
+
+# Environment variables (these should be set in Netlify dashboard)
+# AIRFLOW_BASE_URL = "https://your-airflow-instance.com"
+# AIRFLOW_TOKEN = "your_token_here"
+# OR
+# AIRFLOW_USERNAME = "your_username"
+# AIRFLOW_PASSWORD = "your_password"
