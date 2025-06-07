@@ -154,8 +154,11 @@ Netlify offers excellent serverless deployment with built-in CI/CD and global CD
 #### Quick Deploy
 
 ```bash
-# Interactive deployment script
+# Interactive deployment script (includes environment setup)
 node scripts/deploy-netlify.js
+
+# Or manage environment variables separately
+npm run env:netlify
 ```
 
 #### Manual Deployment
@@ -178,6 +181,26 @@ netlify deploy --prod
 ```
 
 #### Environment Variables
+
+**Option 1: Using Netlify CLI (Recommended)**
+
+```bash
+# Interactive environment setup
+npm run env:netlify
+
+# Or manually set variables
+netlify env:set AIRFLOW_BASE_URL "https://your-airflow-instance.com"
+netlify env:set AIRFLOW_TOKEN "your_api_token"
+
+# For basic auth instead of token
+netlify env:set AIRFLOW_USERNAME "your_username"
+netlify env:set AIRFLOW_PASSWORD "your_password"
+
+# List current variables
+netlify env:list
+```
+
+**Option 2: Netlify Dashboard**
 
 Set these in your Netlify site dashboard (Site settings → Environment variables):
 

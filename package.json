@@ -19,6 +19,7 @@
     "deploy": "node scripts/deploy.js",
     "deploy:netlify": "netlify deploy --prod",
     "dev:netlify": "netlify dev",
+    "env:netlify": "node scripts/netlify-env.js",
     "docker:build": "docker build -t mcp-server-airflow .",
     "docker:run": "docker run --env-file .env -p 3000:3000 mcp-server-airflow",
     "prepublishOnly": "npm run build"

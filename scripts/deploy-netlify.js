@@ -68,27 +68,99 @@ async function main() {
 
   // Configure environment variables
   console.log('\n🔧 Environment Variables Setup');
-  console.log('You need to set these environment variables in your Netlify dashboard:');
-  console.log('1. Go to your site settings in Netlify dashboard');
-  console.log('2. Navigate to Environment Variables');
-  console.log('3. Add the following variables:');
-  console.log('');
-  console.log('Required:');
-  console.log('- AIRFLOW_BASE_URL: Your Airflow instance URL');
-  console.log('');
-  console.log('Authentication (choose one):');
-  console.log('- AIRFLOW_TOKEN: Your Airflow API token');
-  console.log('OR');
-  console.log('- AIRFLOW_USERNAME and AIRFLOW_PASSWORD: Basic auth credentials');
-  console.log('');
-
-  const envConfigured = await question('Have you configured the environment variables? (y/n): ');
   
-  if (envConfigured.toLowerCase() !== 'y') {
-    console.log('\n⚠️  Please configure environment variables before deploying.');
-    console.log('You can find the example in .env.netlify.example');
-    rl.close();
-    return;
+  const setupEnv = await question('Would you like to set up environment variables now? (y/n): ');
+  
+  if (setupEnv.toLowerCase() === 'y') {
+    console.log('\n📝 Setting up Airflow connection...');
+    
+    const airflowBaseUrl = await question('Enter your Airflow base URL (e.g., https://your-airflow.com): ');
+    
+    if (!airflowBaseUrl.trim()) {
+      console.log('❌ Airflow base URL is required');
+      rl.close();
+      return;
+    }
+
+    console.log('\nChoose authentication method:');
+    console.log('1. API Token (recommended)');
+    console.log('2. Username/Password');
+    
+    const authChoice = await question('Enter choice (1 or 2): ');
+    
+    try {
+      // Set the base URL
+      console.log('\n🔐 Setting AIRFLOW_BASE_URL...');
+      exec(`netlify env:set AIRFLOW_BASE_URL "${airflowBaseUrl}"`);
+      
+      if (authChoice === '1') {
+        const airflowToken = await question('Enter your Airflow API token: ');
+        if (!airflowToken.trim()) {
+          console.log('❌ Airflow token is required');
+          rl.close();
+          return;
+        }
+        
+        console.log('🔐 Setting AIRFLOW_TOKEN...');
+        exec(`netlify env:set AIRFLOW_TOKEN "${airflowToken}"`);
+        
+      } else if (authChoice === '2') {
+        const airflowUsername = await question('Enter your Airflow username: ');
+        const airflowPassword = await question('Enter your Airflow password: ');
+        
+        if (!airflowUsername.trim() || !airflowPassword.trim()) {
+          console.log('❌ Both username and password are required');
+          rl.close();
+          return;
+        }
+        
+        console.log('🔐 Setting AIRFLOW_USERNAME...');
+        exec(`netlify env:set AIRFLOW_USERNAME "${airflowUsername}"`);
+        
+        console.log('🔐 Setting AIRFLOW_PASSWORD...');
+        exec(`netlify env:set AIRFLOW_PASSWORD "${airflowPassword}"`);
+        
+      } else {
+        console.log('❌ Invalid authentication choice');
+        rl.close();
+        return;
+      }
+      
+      console.log('✅ Environment variables configured successfully!');
+      
+      // Verify environment variables
+      console.log('\n📋 Verifying environment variables...');
+      try {
+        exec('netlify env:list');
+      } catch (error) {
+        console.log('⚠️  Could not list environment variables, but they should be set');
+      }
+      
+    } catch (error) {
+      console.log('❌ Failed to set environment variables:', error.message);
+      console.log('\n💡 You can set them manually in the Netlify dashboard:');
+      console.log('1. Go to your site settings');
+      console.log('2. Navigate to Environment Variables');
+      console.log('3. Add the variables listed in .env.netlify.example');
+      
+      const continueAnyway = await question('\nContinue with deployment? (y/n): ');
+      if (continueAnyway.toLowerCase() !== 'y') {
+        rl.close();
+        return;
+      }
+    }
+  } else {
+    console.log('\n💡 You can set environment variables later using:');
+    console.log('netlify env:set AIRFLOW_BASE_URL "https://your-airflow.com"');
+    console.log('netlify env:set AIRFLOW_TOKEN "your_token"');
+    console.log('');
+    console.log('Or manually in the Netlify dashboard.');
+    
+    const continueAnyway = await question('\nContinue with deployment? (y/n): ');
+    if (continueAnyway.toLowerCase() !== 'y') {
+      rl.close();
+      return;
+    }
   }
 
   // Deploy to production
