@@ -1,6 +1,6 @@
 {
   "name": "mcp-server-airflow",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Model Context Protocol server for Apache Airflow - enables AI assistants to interact with Airflow workflows, monitor DAG runs, and manage tasks programmatically",
   "main": "dist/index.js",
   "type": "module",
